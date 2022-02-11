@@ -32,7 +32,7 @@
 </template>
 
 <script>
-import TutorialDataService from '../api/dataService';
+import DataService from '../api/dataService';
 
 export default {
   name: 'add-tutorial',
@@ -56,7 +56,9 @@ export default {
         published: false,
       };
 
-      TutorialDataService.create(data)
+      const testTable = new DataService('test');
+
+      testTable.create(data)
         .then(() => {
           console.log('Created new item successfully!');
           this.submitted = true;

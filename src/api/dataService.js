@@ -3,18 +3,20 @@ import {
 } from 'firebase/database';
 import firebase from '../firebase';
 
-const db = ref(firebase, 'tutorials');
+class DataService {
+  constructor(dbRef) {
+    this.db = ref(firebase.database, dbRef);
+  }
 
-class TutorialDataService {
-  getAll = () => db;
+  getAll = () => this.db;
 
-  create = (tutorial) => push(db, tutorial);
+  create = (record) => push(this.db, record);
 
-  update = (key, value) => update(child(db, key), value);
+  update = (key, record) => update(child(this.db, key), record);
 
-  delete = (key) => remove(child(db, key));
+  delete = (key) => remove(child(this.db, key));
 
-  deleteAll = () => remove(db);
+  deleteAll = () => remove(this.db);
 }
 
-export default new TutorialDataService();
+export default DataService;
