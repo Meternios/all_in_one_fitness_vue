@@ -5,13 +5,13 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   onAuthStateChanged,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import firebase from '../firebase';
 
 class Authentication {
   constructor() {
     this.provider = new GoogleAuthProvider();
-    this.getCurrentUser();
   }
 
   create = (email, password) => createUserWithEmailAndPassword(firebase.auth, email, password);
@@ -20,17 +20,17 @@ class Authentication {
 
   signOut = () => signOut(firebase.auth);
 
+  resetPassword = (email) => sendPasswordResetEmail(firebase.auth, email);
+
   googleSignIn = () => signInWithPopup(firebase.auth, this.provider);
 
-  getCurrentUser = () => {
+  getCurrentUser = () => firebase.auth.currentUser;
+
+  startAuthObserver = (callback) => {
     onAuthStateChanged(firebase.auth, (user) => {
-      if (user) {
-        console.log('logged in');
-      } else {
-        console.log('usser logged out');
-      }
+      callback(user);
     });
-  }
+  };
 }
 
 export default new Authentication();
