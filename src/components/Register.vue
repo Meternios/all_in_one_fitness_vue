@@ -6,7 +6,7 @@
       <div class="text-subtitle">Bitte registriere -oder melde dich an um auf
             alle Funktionalitäten Zugriff zuhaben.</div>
     </div>
-    <form class="sign-up-form q-my-lg" @submit="signIn">
+    <form class="sign-up-form q-mt-lg q-mb-sm" @submit="signIn">
       <q-input filled square outlined bg-color="gray" v-model="email" label="E-Mail" />
       <q-input filled square outlined bg-color="gray"
       v-bind:type="passwordType" ref="passwordInput" v-model="password" label="Password"
@@ -15,14 +15,16 @@
           <q-icon @click="togglePassword" v-bind:name="passwordIcon"/>
         </template>
       </q-input>
-      <q-btn type="submit" :loading="loading[0]" unelevated color="primary" class="full-width">
+      <q-btn type="submit" :loading="loading[0]"
+      unelevated color="primary" class="full-width">
         Anmelden
       </q-btn>
       <q-btn :loading="loading[1]" unelevated color="secondary"
       @click="register" class="full-width">
         Registrieren
       </q-btn>
-      <a href="#" class="sign-up-reset" @click="resetPassword">Passwort zurücksetzen</a>
+      <q-btn :loading="loading[3]" flat class="full-width"
+      @click="resetPassword">Passwort zurücksetzen</q-btn>
     </form>
     <div class="sign-up-footer">
       <q-btn :loading="loading[2]" unelevated outline
@@ -49,6 +51,7 @@ const loading = ref([
   false,
   false,
   false,
+  false,
 ]);
 const $q = useQuasar();
 
@@ -68,8 +71,21 @@ onUnmounted(() => {
 });
 
 const notifyError = (error) => {
+  // Todo: add all error codes
+  const params = {
+    'invalid-email': 'Ungültige E-Mail Adresse',
+    'internal-error': 'Ungültiges Passwort',
+    'weak-password': 'Passwort muss mindestens 6 Zeichen beinhalten',
+  };
+  const code = error.code.split('/')[1];
+  let errorMessage = `Ein Fehler ist passiert, bitte versuche es erneut. ${error.message}`;
+
+  if (params[code]) {
+    errorMessage = params[code];
+  }
+
   $q.notify({
-    message: error.message,
+    message: errorMessage,
     position: 'top-right',
     type: 'negative',
     progress: true,
@@ -102,8 +118,13 @@ const signIn = (e) => {
 };
 
 const resetPassword = () => {
+  loading.value[3] = true;
   auth.resetPassword(email.value)
+    .then(() => {
+      loading.value[3] = false;
+    })
     .catch((error) => {
+      loading.value[3] = false;
       notifyError(error);
     });
 };
@@ -147,17 +168,8 @@ const togglePassword = () => {
     align-items: center;
     justify-content: center;
 
-    &-reset {
-      text-align: center;
-      width: 100%;
-      display: block;
-      padding-top: 8px;
-      line-height: 14px;
-      color: @black;
-
-      &:hover {
-        opacity: 0.85;
-      }
+    button {
+      border-radius: 0;
     }
 
     &-form {

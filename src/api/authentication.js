@@ -10,9 +10,7 @@ import {
 import firebase from '../firebase';
 
 class Authentication {
-  constructor() {
-    this.provider = new GoogleAuthProvider();
-  }
+  provider = new GoogleAuthProvider();
 
   create = (email, password) => createUserWithEmailAndPassword(firebase.auth, email, password);
 

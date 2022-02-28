@@ -3,12 +3,9 @@
     <q-header reveal elevated class="bg-primary text-white q-pa-sm">
       <q-toolbar>
         <q-toolbar-title>
-          All in one Fitness
+          {{$route.name}}
         </q-toolbar-title>
         <nav class="nav">
-          <router-link to="/">Home</router-link> |
-          <router-link to="/about">About</router-link> |
-          <a @click="signOut" href="#">Sign out</a>
         </nav>
       </q-toolbar>
     </q-header>
@@ -19,10 +16,16 @@
       </q-page-container>
     </main>
 
-    <q-footer elevated class="bg-primary q-pa-lg">
+    <q-footer elevated class="bg-primary">
       <nav class="nav">
-        <router-link to="/">Home</router-link> |
-        <router-link to="/about">About</router-link>
+        <q-btn-group spread>
+          <q-btn to="/" :class="{ active: $route.name === 'Profil' }"
+          stack label="Profil" icon="person" />
+          <q-btn to="/training" :class="{ active: $route.name === 'Training' }"
+          stack label="Training" icon="fitness_center" />
+          <q-btn to="/ernaehrung" :class="{ active: $route.name === 'Ernährung' }"
+          stack label="Ernährung" icon="fastfood" />
+        </q-btn-group>
       </nav>
     </q-footer>
   </q-layout>
@@ -38,7 +41,6 @@ import {
   ref, onBeforeMount, onMounted,
 } from 'vue';
 import { useQuasar } from 'quasar';
-import firebase from './firebase';
 
 // reactive state
 const signedIn = ref(0);
@@ -53,13 +55,6 @@ function callBack(data) {
   $q.loading.hide();
 }
 
-function signOut() {
-  firebase.auth.signOut()
-    .catch((error) => {
-      console.log(error.message);
-    });
-}
-
 // lifecycle hooks
 onBeforeMount(() => {
   $q.loading.show();
@@ -71,13 +66,20 @@ onMounted(() => {
 </script>
 
 <style lang="less">
-.nav {
-  a {
-    font-weight: bold;
-    color: @white;
+footer {
+  .nav {
+    .q-btn-group {
+      min-height: 63px;
+    }
 
-    &.router-link-exact-active {
-      color: @accent;
+    a {
+      opacity: 0.7;
+      transition: all 0.2s ease-in-out;
+
+      &.active {
+        opacity: 1;
+        font-size: 16px;
+      }
     }
   }
 }

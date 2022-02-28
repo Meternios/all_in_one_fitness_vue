@@ -1,5 +1,5 @@
 import {
-  ref, push, child, update, remove,
+  ref, set, child, update, remove, onValue,
 } from 'firebase/database';
 import firebase from '../firebase';
 
@@ -10,7 +10,13 @@ class DataService {
 
   getAll = () => this.db;
 
-  create = (record) => push(this.db, record);
+  listenOn = (callback) => {
+    onValue(this.db, (snapshot) => {
+      callback(snapshot.val());
+    });
+  };
+
+  create = (record, dbRef) => set(((dbRef !== undefined) ? ref(firebase.database, dbRef) : this.db), record);
 
   update = (key, record) => update(child(this.db, key), record);
 
