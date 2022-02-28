@@ -8,6 +8,9 @@ module.exports = {
   transpileDependencies: [
     'quasar',
   ],
+  pwa: {
+    themeColor: '#01579b',
+  },
   css: {
     loaderOptions: {
       // pass Less.js Options to less-loader
