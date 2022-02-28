@@ -1,4 +1,4 @@
-name: DEPLOY TO PRODUCTION
+name: BUILD FOR PRODUCTION
 
 on:
   push:
@@ -6,14 +6,14 @@ on:
       - master
 
 jobs:
-  cyon-deploy:
+  cyon-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
       - uses: actions/setup-node@master
       - name: Installing project dependencies
-      - run: npm install
+        run: npm install
       - name: Building the project
-      - run: npm run build
+        run: npm run build
         env:
           FIREBASE_APPCHECK_DEBUG_TOKEN: ${{ secrets.FIREBASE_APPCHECK_DEBUG_TOKEN }}
