@@ -66,6 +66,18 @@ onMounted(() => {
 </script>
 
 <style lang="less">
+html {
+  body {
+    font-size: 16px;
+
+    .q {
+      &-input, &-btn {
+        font-size: 16px;
+      }
+    }
+  }
+}
+
 footer {
   .nav {
     .q-btn-group {

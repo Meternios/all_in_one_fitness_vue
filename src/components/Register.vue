@@ -6,7 +6,7 @@
       <div class="text-subtitle">Bitte registriere -oder melde dich an um auf
             alle Funktionalitäten Zugriff zuhaben.</div>
     </div>
-    <form class="sign-up-form q-mt-lg q-mb-sm" @submit="signIn">
+    <q-form class="sign-up-form q-mt-lg q-mb-sm" @submit="signIn">
       <q-input filled square outlined bg-color="gray" v-model="email" label="E-Mail" />
       <q-input filled square outlined bg-color="gray"
       v-bind:type="passwordType" ref="passwordInput" v-model="password" label="Password"
@@ -25,7 +25,7 @@
       </q-btn>
       <q-btn :loading="loading[3]" flat class="full-width"
       @click="resetPassword">Passwort zurücksetzen</q-btn>
-    </form>
+    </q-form>
     <div class="sign-up-footer">
       <q-btn :loading="loading[2]" unelevated outline
       @click="googleSignIn" class="full-width">
@@ -71,7 +71,7 @@ onUnmounted(() => {
 });
 
 const notifyError = (error) => {
-  // Todo: add all error codes
+  // Todo: add all error codes and make it globally available
   const params = {
     'invalid-email': 'Ungültige E-Mail Adresse',
     'internal-error': 'Ungültiges Passwort',
