@@ -60,11 +60,9 @@ export default {
 
       testTable.create(data)
         .then(() => {
-          console.log('Created new item successfully!');
           this.submitted = true;
         })
-        .catch((e) => {
-          console.log(e);
+        .catch(() => {
         });
     },
 
