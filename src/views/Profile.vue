@@ -14,7 +14,7 @@
           <div class="text-h6">Heutiges Gewicht</div>
         </q-card-section>
 
-        <q-form @submit="addWeight()">
+        <q-form @submit="addWeight">
           <q-card-section class="q-pt-none">
             <q-input dense v-model="weight" step=".1" type="number" autofocus/>
             <q-input v-model="date">
@@ -22,10 +22,7 @@
                 <q-icon name="event" class="cursor-pointer">
                   <q-popup-proxy ref="qDateProxy" cover transition-show="scale"
                   transition-hide="scale">
-                    <q-date v-model="date" mask="DD.MM.YYYY">
-                      <div class="row items-center justify-end">
-                        <q-btn v-close-popup label="Auswählen" color="primary" flat />
-                      </div>
+                    <q-date v-model="date" mask="DD.MM.YYYY" @click="hideCalendar">
                     </q-date>
                   </q-popup-proxy>
                 </q-icon>
@@ -52,7 +49,7 @@
 <script setup>
 import ApexCharts from 'apexcharts';
 import {
-  onMounted, ref,
+  onMounted, ref, onBeforeUnmount,
 } from 'vue';
 import DataService from '@/api/dataService';
 import auth from '@/api/authentication';
@@ -68,6 +65,7 @@ const weight = ref('');
 const today = dayjs().format('DD.MM.YYYY');
 const date = ref(today);
 const $q = useQuasar();
+const qDateProxy = ref();
 let chart;
 
 const options = {
@@ -100,6 +98,12 @@ const options = {
 };
 const tableUser = new DataService(`weight/${user.uid}`);
 
+function hideCalendar(e) {
+  if (e.target.closest('.q-date__calendar-days-container') !== null) {
+    qDateProxy.value.hide();
+  }
+}
+
 function dataRecieved(data) {
   const recordsToAdd = [];
   if (data) {
@@ -121,12 +125,42 @@ function dataRecieved(data) {
 
 function addWeight() {
   const tempDate = dayjs(date.value, 'DD.MM.YYYY', true);
-  if (weight.value > 0 && tempDate.isValid()) {
+
+  if (parseInt(weight.value, 0) > 0 && tempDate.isValid()) {
     tableUser.create({ weight: weight.value, date: date.value }, `weight/${user.uid}/${tempDate.format('YYYYMMDD')}`)
       .then(() => {
         prompt.value = false;
         weight.value = '';
         date.value = today;
+
+        $q.notify({
+          message: 'Eintrag erfolgreich hinzugefügt.',
+          position: 'top-right',
+          type: 'positive',
+          progress: true,
+        });
+      })
+      .catch((error) => {
+        $q.notify({
+          message: `Ein Fehler ist passiert, bitte überprüfe deine Daten und versuche es erneut. ${error.message}`,
+          position: 'top-right',
+          type: 'negative',
+          progress: true,
+        });
+      });
+  } else if (parseInt(weight.value, 0) === 0 && tempDate.isValid()) {
+    tableUser.delete(`${tempDate.format('YYYYMMDD')}`)
+      .then(() => {
+        prompt.value = false;
+        weight.value = '';
+        date.value = today;
+
+        $q.notify({
+          message: 'Eintrag erfolgreich gelöscht.',
+          position: 'top-right',
+          type: 'positive',
+          progress: true,
+        });
       })
       .catch((error) => {
         $q.notify({
@@ -150,5 +184,9 @@ onMounted(() => {
   chart = new ApexCharts(document.querySelector('#chart'), options);
   chart.render();
   tableUser.listenOn(dataRecieved);
+});
+
+onBeforeUnmount(() => {
+  chart.destroy();
 });
 </script>
