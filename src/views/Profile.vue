@@ -1,12 +1,12 @@
 <template>
   <div class="home">
     <div class="row">
-      <div class="col-12 col-md-6">
+      <div class="col-12 col-lg-6">
         <div id="chart"></div>
       </div>
     </div>
     <q-page-sticky position="bottom-right" :offset="[18, 18]">
-      <q-btn fab icon="add" color="accent" @click="prompt = true"/>
+      <q-btn fab icon="add" color="accent" @click="prompt = true" aria-label="Gewicht hinzufügen"/>
     </q-page-sticky>
     <q-dialog v-model="prompt" persistent>
       <q-card style="min-width: 350px">
@@ -56,6 +56,7 @@ import auth from '@/api/authentication';
 import * as dayjs from 'dayjs';
 import * as customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useQuasar } from 'quasar';
+import PubSub from 'pubsub-js';
 
 dayjs.extend(customParseFormat);
 
@@ -67,6 +68,7 @@ const date = ref(today);
 const $q = useQuasar();
 const qDateProxy = ref();
 let chart;
+let chartData;
 
 const options = {
   chart: {
@@ -77,20 +79,39 @@ const options = {
       offsetY: 0,
       tools: {
         download: false,
-        selection: true,
-        zoom: true,
+        selection: false,
+        zoom: false,
         zoomin: false,
         zoomout: false,
-        pan: true,
+        pan: false,
         reset: false,
         customIcons: [],
       },
       autoSelected: 'zoom',
     },
+    animations: {
+      enabled: true,
+      easing: 'easeinout',
+      animateGradually: {
+        enabled: true,
+      },
+      dynamicAnimation: {
+        enabled: true,
+      },
+    },
+  },
+  stroke: {
+    curve: 'smooth',
+  },
+  zoom: {
+    enabled: false,
   },
   colors: ['#01579b'],
   series: [],
   xaxis: {
+    tooltip: {
+      enabled: false,
+    },
   },
   noData: {
     text: 'Laden...',
@@ -104,14 +125,17 @@ function hideCalendar(e) {
   }
 }
 
-function dataRecieved(data) {
+function updateChart(data) {
+  chartData = data;
   const recordsToAdd = [];
   if (data) {
-    Object.values(data).forEach((record) => {
-      recordsToAdd.push({
-        x: record.date,
-        y: record.weight,
-      });
+    Object.entries(data).forEach((record) => {
+      if (record[0] >= window.aiofGlobalDateFrom && record[0] <= window.aiofGlobalDateTo) {
+        recordsToAdd.push({
+          x: record[1].date,
+          y: record[1].weight,
+        });
+      }
     });
 
     chart.updateSeries([{
@@ -121,6 +145,10 @@ function dataRecieved(data) {
   } else {
     document.querySelector('#chart text').innerHTML = 'Keine Daten gefunden';
   }
+}
+
+function dataRecieved(data) {
+  updateChart(data);
 }
 
 function addWeight() {
@@ -188,5 +216,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   chart.destroy();
+});
+
+PubSub.subscribe('date.changed', () => {
+  updateChart(chartData);
 });
 </script>

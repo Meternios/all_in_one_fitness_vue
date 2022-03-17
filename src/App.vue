@@ -5,8 +5,16 @@
         <q-toolbar-title>
           {{$route.name}}
         </q-toolbar-title>
-        <nav class="nav">
-        </nav>
+        <q-btn icon="event" flat aria-label="Zeitspanne">
+          <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+            <q-date v-model="date" mask="DD.MM.YYYY" range>
+              <div class="row items-center justify-end q-gutter-sm">
+                <q-btn label="Abbrechen" color="primary" flat v-close-popup />
+                <q-btn label="OK" color="primary" flat @click="updateDate" v-close-popup />
+              </div>
+            </q-date>
+          </q-popup-proxy>
+        </q-btn>
       </q-toolbar>
     </q-header>
 
@@ -35,16 +43,25 @@
 </template>
 
 <script setup>
+// TODO Remove as many Libarys as possible from here and capsule it in components
 import auth from '@/api/authentication';
 import Register from '@/components/Register.vue';
 import {
   ref, onBeforeMount, onMounted,
 } from 'vue';
 import { useQuasar } from 'quasar';
+import * as dayjs from 'dayjs';
+import * as customParseFormat from 'dayjs/plugin/customParseFormat';
+import PubSub from 'pubsub-js';
+
+dayjs.extend(customParseFormat);
 
 // reactive state
 const signedIn = ref(0);
+const date = ref({ from: dayjs().day(1).format('DD.MM.YYYY'), to: dayjs().day(7).format('DD.MM.YYYY') });
 const $q = useQuasar();
+window.aiofGlobalDateFrom = dayjs().day(1).format('YYYYMMDD');
+window.aiofGlobalDateTo = dayjs().day(7).format('YYYYMMDD');
 
 function callBack(data) {
   if (data) {
@@ -53,6 +70,12 @@ function callBack(data) {
     signedIn.value = false;
   }
   $q.loading.hide();
+}
+
+function updateDate() {
+  window.aiofGlobalDateFrom = dayjs(date.value.from, 'DD.MM.YYYY', true).format('YYYYMMDD');
+  window.aiofGlobalDateTo = dayjs(date.value.to, 'DD.MM.YYYY', true).format('YYYYMMDD');
+  PubSub.publish('date.changed');
 }
 
 // lifecycle hooks
