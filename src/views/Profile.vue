@@ -16,8 +16,8 @@
 
         <q-form @submit="addWeight">
           <q-card-section class="q-pt-none">
-            <q-input dense v-model="weight" step=".1" type="number" autofocus/>
-            <q-input v-model="date">
+            <q-input dense v-model="weight" step=".1" type="number" autofocus label="Gewicht"/>
+            <q-input v-model="date" label="Datum">
               <template v-slot:append>
                 <q-icon name="event" class="cursor-pointer">
                   <q-popup-proxy ref="qDateProxy" cover transition-show="scale"
@@ -69,6 +69,7 @@ const $q = useQuasar();
 const qDateProxy = ref();
 let chart;
 let chartData;
+let pubSubToken;
 
 const options = {
   chart: {
@@ -142,6 +143,10 @@ function updateChart(data) {
       name: 'Gewicht',
       data: recordsToAdd,
     }]);
+
+    if (recordsToAdd.length <= 0) {
+      document.querySelector('#chart text').innerHTML = 'Keine Daten gefunden';
+    }
   } else {
     document.querySelector('#chart text').innerHTML = 'Keine Daten gefunden';
   }
@@ -212,13 +217,15 @@ onMounted(() => {
   chart = new ApexCharts(document.querySelector('#chart'), options);
   chart.render();
   tableUser.listenOn(dataRecieved);
+
+  pubSubToken = PubSub.subscribe('date.changed', () => {
+    updateChart(chartData);
+  });
 });
 
 onBeforeUnmount(() => {
   chart.destroy();
-});
 
-PubSub.subscribe('date.changed', () => {
-  updateChart(chartData);
+  PubSub.unsubscribe(pubSubToken);
 });
 </script>
