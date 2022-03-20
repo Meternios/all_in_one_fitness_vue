@@ -6,8 +6,28 @@
       row-key="name"
       binary-state-sort
       v-model:pagination="pagination"
-      @row-click="clickedRow"
     >
+      <template v-slot:body="props">
+        <q-tr :props="props" @click="clickedRow(props.row)"
+        v-touch-pan.horizontal.prevent.mouse="(evt) => handleRowSwipe(evt, props)"
+        v-touch-hold.mouse="(evt) => handleRowHold(props.row)">
+          <q-td key="date" :props="props">
+            {{ props.row.date }}
+          </q-td>
+          <q-td key="calories" :props="props">
+            {{ props.row.calories }}
+          </q-td>
+          <q-td key="protein" :props="props">
+            {{ props.row.protein }}
+          </q-td>
+          <q-td key="carbohydrates" :props="props">
+            {{ props.row.carbohydrates }}
+          </q-td>
+          <q-td key="fat" :props="props">
+            {{ props.row.fat }}
+          </q-td>
+        </q-tr>
+      </template>
     </q-table>
     <q-page-sticky position="bottom-right" :offset="[18, 18]">
       <q-btn fab icon="add" color="accent" @click="showModal" aria-label="Makronährstoffe hinzufügen"/>
@@ -101,6 +121,7 @@ const addDate = ref(today);
 const addFat = ref();
 const addProtein = ref();
 const $q = useQuasar();
+let removeTimeout;
 let pubSubToken;
 let tableData;
 
@@ -119,6 +140,8 @@ function updateData(data) {
       }
     });
 
+    rows.value = recordsToAdd;
+  } else {
     rows.value = recordsToAdd;
   }
 }
@@ -201,13 +224,89 @@ function hideCalendar(e) {
   }
 }
 
-function clickedRow(evt, row) {
+function clickedRow(row) {
   prompt.value = true;
   addCalories.value = row.calories;
   addCarbohydrates.value = row.carbohydrates;
   addDate.value = row.date;
   addFat.value = row.fat;
   addProtein.value = row.protein;
+}
+
+function undoRemove(row) {
+  const currentRow = row;
+  window.clearTimeout(removeTimeout);
+  currentRow.style.transform = 'translateX(0)';
+  currentRow.classList.remove('swipe-row-right', 'swipe-row-left');
+}
+
+function getOffset(el) {
+  const rect = el.getBoundingClientRect();
+  return {
+    left: rect.left + window.scrollX,
+    top: rect.top + window.scrollY,
+  };
+}
+
+function handleRowSwipe(evt, row) {
+  const isSwiping = evt.isFinal !== true && evt.isFirst !== true;
+  const offsetTillDelete = 150;
+  const swipingFinshed = evt.isFinal;
+  const currentRow = document.querySelector(`.q-table tbody > tr:nth-child(${row.rowIndex + 1})`);
+  if (isSwiping) {
+    currentRow.style.transform = `translateX(${getOffset(currentRow).left + evt.delta.x}px)`;
+
+    if ((getOffset(currentRow).left > offsetTillDelete
+      || getOffset(currentRow).left < (-1) * offsetTillDelete)
+      && !currentRow.parentElement.classList.contains('fade-background-red')) {
+      currentRow.parentElement.classList.add('fade-background-red');
+    } else if ((getOffset(currentRow).left <= offsetTillDelete
+      && getOffset(currentRow).left >= (-1) * offsetTillDelete)
+      && currentRow.parentElement.classList.contains('fade-background-red')) {
+      currentRow.parentElement.classList.remove('fade-background-red');
+    }
+  }
+
+  if (swipingFinshed && (getOffset(currentRow).left > offsetTillDelete
+  || getOffset(currentRow).left < (-1) * offsetTillDelete)) {
+    currentRow.style.transition = 'transform 1s';
+    if (evt.direction === 'right') {
+      currentRow.classList.add('swipe-row-right');
+    } else {
+      currentRow.classList.add('swipe-row-left');
+    }
+
+    $q.notify({
+      message: 'Eintrag erfolgreich gelöscht.',
+      position: 'top-right',
+      type: 'warning',
+      progress: true,
+      actions: [
+        { label: 'Rückgänig', handler: () => { undoRemove(currentRow); } },
+      ],
+    });
+
+    removeTimeout = window.setTimeout(() => {
+      currentRow.style.transform = 'translateX(0px)';
+      tableUser.delete(dayjs(row.row.date, 'DD.MM.YYYY', true).format('YYYYMMDD'));
+    }, 6500);
+  } else if (swipingFinshed && (getOffset(currentRow).left < offsetTillDelete
+  || getOffset(currentRow).left > (-1) * offsetTillDelete)) {
+    if (evt.direction === 'right') {
+      currentRow.classList.add('bounceLeft');
+    } else {
+      currentRow.classList.add('bounceRight');
+    }
+
+    window.setTimeout(() => {
+      currentRow.style.transform = 'translateX(0)';
+      currentRow.classList.remove('bounceRight', 'bounceLeft');
+    }, 1000);
+  }
+}
+
+function handleRowHold(row) {
+  console.log(row);
 }
 
 onBeforeMount(() => {
@@ -223,8 +322,87 @@ onBeforeUnmount(() => {
 });
 </script>
 
+// TODO Put table in a new component and make styles scoped
 <style lang="less">
-.q-popup-edit__buttons {
-  justify-content: flex-end;
+@keyframes bouncingLeft {
+  50%  {transform: translateX(0)}
+  75%  {transform: translateX(30px)}
+  100% {transform: translateX(0)}
+}
+
+@keyframes bouncingRight {
+  50%  {transform: translateX(0)}
+  75%  {transform: translateX(-30px)}
+  100% {transform: translateX(0)}
+}
+
+@keyframes circleBackgroundChange {
+  0%  {background: radial-gradient(circle, @black 0%, @black 100%);}
+  25%  {background: radial-gradient(circle, @negative 0%, @negative 25%, @black 100%);}
+  50%  {background: radial-gradient(circle, @negative 0%, @negative 50%, @black 100%);}
+  75%  {background: radial-gradient(circle, @negative 0%, @negative 75%, @black 100%);}
+  100% {background: radial-gradient(circle, @negative 0%, @negative 100%);}
+}
+
+.bounceLeft {
+  animation-name: bouncingLeft;
+  animation-duration: 1s;
+  animation-fill-mode: forwards;
+}
+
+.bounceRight {
+  animation-name: bouncingRight;
+  animation-duration: 1s;
+  animation-fill-mode: forwards;
+}
+
+.swipe-row-right {
+  transform: translateX(100%) !important;
+}
+
+.swipe-row-left {
+  transform: translateX(-100%) !important;
+}
+
+.q-table__middle {
+  overflow: hidden;
+
+  tbody {
+    background: @black;
+
+    &.fade-background-red {
+      animation-name: circleBackgroundChange;
+      animation-duration: 0.4s;
+      animation-fill-mode: forwards;
+    }
+
+    .q-tr {
+      background-color: @white;
+
+      & > td:first-child:after,
+      & > td:last-child:after {
+        content: "delete_sweep";
+        font-size: 30px;
+        color: @white;
+        font-family: 'Material Icons';
+        width: 50px;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: absolute;
+        background-color: transparent;
+      }
+
+      & > td:first-child:after{
+        transform: translateX(-100%) scaleX(-1);
+        left: 0;
+      }
+
+      & > td:last-child:after{
+        left: 100%;
+      }
+    }
+  }
 }
 </style>

@@ -52,16 +52,21 @@ import {
 import { useQuasar } from 'quasar';
 import * as dayjs from 'dayjs';
 import * as customParseFormat from 'dayjs/plugin/customParseFormat';
+import * as customWeekday from 'dayjs/plugin/weekday';
+import * as deChLocale from 'dayjs/locale/de-ch';
 import PubSub from 'pubsub-js';
 
+dayjs.locale(deChLocale);
+
 dayjs.extend(customParseFormat);
+dayjs.extend(customWeekday);
 
 // reactive state
 const signedIn = ref(0);
-const date = ref({ from: dayjs().day(1).format('DD.MM.YYYY'), to: dayjs().day(7).format('DD.MM.YYYY') });
+const date = ref({ from: dayjs().weekday(0).format('DD.MM.YYYY'), to: dayjs().weekday(6).format('DD.MM.YYYY') });
 const $q = useQuasar();
-window.aiofGlobalDateFrom = dayjs().day(1).format('YYYYMMDD');
-window.aiofGlobalDateTo = dayjs().day(7).format('YYYYMMDD');
+window.aiofGlobalDateFrom = dayjs().weekday(0).format('YYYYMMDD');
+window.aiofGlobalDateTo = dayjs().weekday(6).format('YYYYMMDD');
 
 function callBack(data) {
   if (data) {

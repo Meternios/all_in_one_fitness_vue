@@ -213,6 +213,7 @@ function addWeight() {
   }
 }
 
+// TODO Change from ApexCharts to GoogleCharts?
 onMounted(() => {
   chart = new ApexCharts(document.querySelector('#chart'), options);
   chart.render();
