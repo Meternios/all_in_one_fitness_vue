@@ -42,7 +42,7 @@
           </div>
           <div class="q-table__control">
             <q-btn outline color="primary" label="Bearbeiten" class="q-mr-sm" dense
-            v-if="selectedRows && selectedRows.length == 1" @click="() => clickedRow(selectedRows[0])"/>
+            v-if="selectedRows && selectedRows.length == 1" @click="() => clickedRow(selectedRows[0], true)"/>
             <q-btn outline color="primary" label="Löschen" @click="() => deleteRow(selectedRows)" dense/>
           </div>
       </template>
@@ -244,14 +244,24 @@ function hideCalendar(e) {
   }
 }
 
-function clickedRow(row) {
-  addOrEditLabel.value = 'Bearbeiten';
-  prompt.value = true;
-  addCalories.value = row.calories;
-  addCarbohydrates.value = row.carbohydrates;
-  addDate.value = row.date;
-  addFat.value = row.fat;
-  addProtein.value = row.protein;
+function clickedRow(row, edit) {
+  if (selectedRows.value.length === 0 || edit) {
+    addOrEditLabel.value = 'Bearbeiten';
+    prompt.value = true;
+    addCalories.value = row.calories;
+    addCarbohydrates.value = row.carbohydrates;
+    addDate.value = row.date;
+    addFat.value = row.fat;
+    addProtein.value = row.protein;
+  } else {
+    const arrayIndex = selectedRows.value.findIndex((element) => element.date === row.date);
+
+    if (arrayIndex >= 0) {
+      selectedRows.value.splice(arrayIndex, 1);
+    } else {
+      selectedRows.value.push(row);
+    }
+  }
 }
 
 function undoRemove(row) {
@@ -442,7 +452,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
 
   .q-table th, .q-table td {
-    padding: 7px 13px;
+    padding: 7px 10px;
   }
 
   thead {
