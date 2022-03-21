@@ -3,14 +3,19 @@
     <q-table
       :rows="rows"
       :columns="columns"
-      row-key="name"
+      row-key="date"
       binary-state-sort
       v-model:pagination="pagination"
+      :selection="(selectedRows && selectedRows.length > 0) ? 'multiple' : null"
+      v-model:selected="selectedRows"
     >
       <template v-slot:body="props">
         <q-tr :props="props" @click="clickedRow(props.row)"
         v-touch-pan.horizontal.prevent.mouse="(evt) => handleRowSwipe(evt, props)"
-        v-touch-hold.mouse="(evt) => handleRowHold(props.row)">
+        v-touch-hold.mouse="(evt) => handleRowHold(props)">
+          <q-td key="checkbox" v-if="selectedRows && selectedRows.length > 0">
+            <q-checkbox v-model="props.selected" dense/>
+          </q-td>
           <q-td key="date" :props="props">
             {{ props.row.date }}
           </q-td>
@@ -27,6 +32,19 @@
             {{ props.row.fat }}
           </q-td>
         </q-tr>
+      </template>
+      <template v-slot:bottom v-if="selectedRows && selectedRows.length > 0">
+          <div class="q-table__separator col"></div>
+          <div class="q-table__control q-mr-sm">
+            <div class="q-table__control__selected">
+              {{selectedRows.length}} {{(selectedRows.length > 1) ? 'Reihen ausgewählt.' : 'Reihe ausgewählt.'}}
+            </div>
+          </div>
+          <div class="q-table__control">
+            <q-btn outline color="primary" label="Bearbeiten" class="q-mr-sm" dense
+            v-if="selectedRows && selectedRows.length == 1" @click="() => clickedRow(selectedRows[0])"/>
+            <q-btn outline color="primary" label="Löschen" @click="() => deleteRow(selectedRows)" dense/>
+          </div>
       </template>
     </q-table>
     <q-page-sticky position="bottom-right" :offset="[18, 18]">
@@ -62,7 +80,7 @@
 
           <q-card-actions align="right" class="text-primary">
             <q-btn flat label="Abbrechen" v-close-popup />
-            <q-btn flat label="Hinzufügen" type="submit"/>
+            <q-btn flat :label="addOrEditLabel" type="submit"/>
           </q-card-actions>
         </q-form>
       </q-card>
@@ -108,6 +126,7 @@ const columns = [
   },
 ];
 
+const selectedRows = ref();
 const qDateProxy = ref();
 const user = auth.getCurrentUser();
 const tableUser = new DataService(`nutrition/${user.uid}`);
@@ -121,7 +140,7 @@ const addDate = ref(today);
 const addFat = ref();
 const addProtein = ref();
 const $q = useQuasar();
-let removeTimeout;
+const addOrEditLabel = ref('Hinzufügen');
 let pubSubToken;
 let tableData;
 
@@ -147,6 +166,7 @@ function updateData(data) {
 }
 
 function showModal() {
+  addOrEditLabel.value = 'Hinzufügen';
   prompt.value = true;
   addCalories.value = '';
   addCarbohydrates.value = '';
@@ -176,7 +196,7 @@ function calculateCalories() {
 function addMacros() {
   const tempDate = dayjs(addDate.value, 'DD.MM.YYYY', true);
 
-  if (checkIfMacroValid(addCalories.value) && checkIfMacroValid(addFat.value)
+  if (checkIfMacroValid(addFat.value)
   && checkIfMacroValid(addCarbohydrates.value) && checkIfMacroValid(addProtein.value) && tempDate.isValid()) {
     tableUser.create({
       calories: addCalories.value,
@@ -225,6 +245,7 @@ function hideCalendar(e) {
 }
 
 function clickedRow(row) {
+  addOrEditLabel.value = 'Bearbeiten';
   prompt.value = true;
   addCalories.value = row.calories;
   addCarbohydrates.value = row.carbohydrates;
@@ -235,9 +256,13 @@ function clickedRow(row) {
 
 function undoRemove(row) {
   const currentRow = row;
-  window.clearTimeout(removeTimeout);
+  window.clearTimeout(row.dataset.removeTimeout);
   currentRow.style.transform = 'translateX(0)';
+  currentRow.parentElement.classList.remove('fade-background-red');
   currentRow.classList.remove('swipe-row-right', 'swipe-row-left');
+  window.setTimeout(() => {
+    currentRow.style.removeProperty('transition');
+  }, 1000);
 }
 
 function getOffset(el) {
@@ -248,9 +273,24 @@ function getOffset(el) {
   };
 }
 
+function deleteRow(allSelectedRows) {
+  for (let i = 0; i < allSelectedRows.length; i += 1) {
+    tableUser.delete(dayjs(allSelectedRows[i].date, 'DD.MM.YYYY', true).format('YYYYMMDD'))
+      .then(() => {
+        $q.notify({
+          message: 'Eintrag erfolgreich gelöscht.',
+          position: 'top-right',
+          type: 'positive',
+          progress: true,
+        });
+        allSelectedRows.splice(i, 1);
+      });
+  }
+}
+
 function handleRowSwipe(evt, row) {
   const isSwiping = evt.isFinal !== true && evt.isFirst !== true;
-  const offsetTillDelete = 150;
+  const offsetTillDelete = 100;
   const swipingFinshed = evt.isFinal;
   const currentRow = document.querySelector(`.q-table tbody > tr:nth-child(${row.rowIndex + 1})`);
   if (isSwiping) {
@@ -269,7 +309,7 @@ function handleRowSwipe(evt, row) {
 
   if (swipingFinshed && (getOffset(currentRow).left > offsetTillDelete
   || getOffset(currentRow).left < (-1) * offsetTillDelete)) {
-    currentRow.style.transition = 'transform 1s';
+    currentRow.style.transition = 'transform 0.4s';
     if (evt.direction === 'right') {
       currentRow.classList.add('swipe-row-right');
     } else {
@@ -281,12 +321,13 @@ function handleRowSwipe(evt, row) {
       position: 'top-right',
       type: 'warning',
       progress: true,
+      group: false,
       actions: [
         { label: 'Rückgänig', handler: () => { undoRemove(currentRow); } },
       ],
     });
 
-    removeTimeout = window.setTimeout(() => {
+    currentRow.dataset.removeTimeout = window.setTimeout(() => {
       currentRow.style.transform = 'translateX(0px)';
       tableUser.delete(dayjs(row.row.date, 'DD.MM.YYYY', true).format('YYYYMMDD'));
     }, 6500);
@@ -305,8 +346,11 @@ function handleRowSwipe(evt, row) {
   }
 }
 
-function handleRowHold(row) {
-  console.log(row);
+function handleRowHold(props) {
+  if (selectedRows.value == null) {
+    selectedRows.value = [];
+  }
+  selectedRows.value.push(rows.value[props.rowIndex]);
 }
 
 onBeforeMount(() => {
@@ -322,17 +366,17 @@ onBeforeUnmount(() => {
 });
 </script>
 
-// TODO Put table in a new component and make styles scoped
+<!-- TODO Put table in a new component and make styles scoped -->
 <style lang="less">
 @keyframes bouncingLeft {
   50%  {transform: translateX(0)}
-  75%  {transform: translateX(30px)}
+  75%  {transform: translateX(15px)}
   100% {transform: translateX(0)}
 }
 
 @keyframes bouncingRight {
   50%  {transform: translateX(0)}
-  75%  {transform: translateX(-30px)}
+  75%  {transform: translateX(-15px)}
   100% {transform: translateX(0)}
 }
 
@@ -346,13 +390,13 @@ onBeforeUnmount(() => {
 
 .bounceLeft {
   animation-name: bouncingLeft;
-  animation-duration: 1s;
+  animation-duration: 0.4s;
   animation-fill-mode: forwards;
 }
 
 .bounceRight {
   animation-name: bouncingRight;
-  animation-duration: 1s;
+  animation-duration: 0.4s;
   animation-fill-mode: forwards;
 }
 
@@ -367,6 +411,26 @@ onBeforeUnmount(() => {
 .q-table__middle {
   overflow: hidden;
 
+  .q-table th, .q-table td {
+    padding: 7px 13px;
+  }
+
+  thead {
+    .q-checkbox__inner {
+      width: 18px;
+      height: 18px;
+      min-width: auto;
+      .q-checkbox__bg{
+        height: 100%;
+        width: 100%;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+      }
+    }
+  }
+
   tbody {
     background: @black;
 
@@ -378,6 +442,15 @@ onBeforeUnmount(() => {
 
     .q-tr {
       background-color: @white;
+
+      &.selected {
+        opacity: 0.92;
+
+        > td:after {
+          content: '';
+          background: none;
+        }
+      }
 
       & > td:first-child:after,
       & > td:last-child:after {

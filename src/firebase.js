@@ -3,6 +3,7 @@ import { initializeApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
+import { getMessaging } from 'firebase/messaging';
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -21,6 +22,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth();
+const messaging = getMessaging(app);
 
 if (process.env.NODE_ENV === 'development') {
   window.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
@@ -40,4 +42,5 @@ export default {
   database,
   auth,
   appCheck,
+  messaging,
 };
