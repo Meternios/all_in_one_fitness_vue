@@ -126,7 +126,7 @@ const columns = [
   },
 ];
 
-const selectedRows = ref();
+const selectedRows = ref([]);
 const qDateProxy = ref();
 const user = auth.getCurrentUser();
 const tableUser = new DataService(`nutrition/${user.uid}`);
@@ -258,10 +258,11 @@ function undoRemove(row) {
   const currentRow = row;
   window.clearTimeout(row.dataset.removeTimeout);
   currentRow.style.transform = 'translateX(0)';
-  currentRow.parentElement.classList.remove('fade-background-red');
   currentRow.classList.remove('swipe-row-right', 'swipe-row-left');
   window.setTimeout(() => {
     currentRow.style.removeProperty('transition');
+    currentRow.firstElementChild.classList.remove('fade-background-red');
+    currentRow.lastElementChild.classList.remove('fade-background-red');
   }, 1000);
 }
 
@@ -283,66 +284,73 @@ function deleteRow(allSelectedRows) {
           type: 'positive',
           progress: true,
         });
-        allSelectedRows.splice(i, 1);
       });
+
+    selectedRows.value = [];
   }
 }
 
 function handleRowSwipe(evt, row) {
-  const isSwiping = evt.isFinal !== true && evt.isFirst !== true;
-  const offsetTillDelete = 100;
-  const swipingFinshed = evt.isFinal;
-  const currentRow = document.querySelector(`.q-table tbody > tr:nth-child(${row.rowIndex + 1})`);
-  if (isSwiping) {
-    currentRow.style.transform = `translateX(${getOffset(currentRow).left + evt.delta.x}px)`;
+  if (selectedRows.value.length === 0) {
+    const isSwiping = evt.isFinal !== true && evt.isFirst !== true;
+    const offsetTillDelete = 100;
+    const swipingFinshed = evt.isFinal;
+    const currentRow = document.querySelector(`.q-table tbody > tr:nth-child(${row.rowIndex + 1})`);
+    if (isSwiping) {
+      currentRow.style.transform = `translateX(${getOffset(currentRow).left + evt.delta.x}px)`;
 
-    if ((getOffset(currentRow).left > offsetTillDelete
-      || getOffset(currentRow).left < (-1) * offsetTillDelete)
-      && !currentRow.parentElement.classList.contains('fade-background-red')) {
-      currentRow.parentElement.classList.add('fade-background-red');
-    } else if ((getOffset(currentRow).left <= offsetTillDelete
-      && getOffset(currentRow).left >= (-1) * offsetTillDelete)
-      && currentRow.parentElement.classList.contains('fade-background-red')) {
-      currentRow.parentElement.classList.remove('fade-background-red');
-    }
-  }
-
-  if (swipingFinshed && (getOffset(currentRow).left > offsetTillDelete
-  || getOffset(currentRow).left < (-1) * offsetTillDelete)) {
-    currentRow.style.transition = 'transform 0.4s';
-    if (evt.direction === 'right') {
-      currentRow.classList.add('swipe-row-right');
-    } else {
-      currentRow.classList.add('swipe-row-left');
+      if ((getOffset(currentRow).left > offsetTillDelete
+        || getOffset(currentRow).left < (-1) * offsetTillDelete)
+        && !currentRow.firstElementChild.classList.contains('fade-background-red')
+        && !currentRow.lastElementChild.classList.contains('fade-background-red')) {
+        currentRow.firstElementChild.classList.add('fade-background-red');
+        currentRow.lastElementChild.classList.add('fade-background-red');
+      } else if ((getOffset(currentRow).left <= offsetTillDelete
+        && getOffset(currentRow).left >= (-1) * offsetTillDelete)
+        && currentRow.firstElementChild.classList.contains('fade-background-red')
+        && currentRow.lastElementChild.classList.contains('fade-background-red')) {
+        currentRow.firstElementChild.classList.remove('fade-background-red');
+        currentRow.lastElementChild.classList.remove('fade-background-red');
+      }
     }
 
-    $q.notify({
-      message: 'Eintrag erfolgreich gelöscht.',
-      position: 'top-right',
-      type: 'warning',
-      progress: true,
-      group: false,
-      actions: [
-        { label: 'Rückgänig', handler: () => { undoRemove(currentRow); } },
-      ],
-    });
+    if (swipingFinshed && (getOffset(currentRow).left > offsetTillDelete
+    || getOffset(currentRow).left < (-1) * offsetTillDelete)) {
+      currentRow.style.transition = 'transform 0.4s';
+      if (evt.direction === 'right') {
+        currentRow.classList.add('swipe-row-right');
+      } else {
+        currentRow.classList.add('swipe-row-left');
+      }
 
-    currentRow.dataset.removeTimeout = window.setTimeout(() => {
-      currentRow.style.transform = 'translateX(0px)';
-      tableUser.delete(dayjs(row.row.date, 'DD.MM.YYYY', true).format('YYYYMMDD'));
-    }, 6500);
-  } else if (swipingFinshed && (getOffset(currentRow).left < offsetTillDelete
-  || getOffset(currentRow).left > (-1) * offsetTillDelete)) {
-    if (evt.direction === 'right') {
-      currentRow.classList.add('bounceLeft');
-    } else {
-      currentRow.classList.add('bounceRight');
+      $q.notify({
+        message: 'Eintrag erfolgreich gelöscht.',
+        position: 'top-right',
+        type: 'warning',
+        progress: true,
+        group: false,
+        actions: [
+          { label: 'Rückgänig', handler: () => { undoRemove(currentRow); } },
+        ],
+      });
+
+      currentRow.dataset.removeTimeout = window.setTimeout(() => {
+        currentRow.style.transform = 'translateX(0px)';
+        tableUser.delete(dayjs(row.row.date, 'DD.MM.YYYY', true).format('YYYYMMDD'));
+      }, 6500);
+    } else if (swipingFinshed && (getOffset(currentRow).left < offsetTillDelete
+    || getOffset(currentRow).left > (-1) * offsetTillDelete)) {
+      if (evt.direction === 'right') {
+        currentRow.classList.add('bounceLeft');
+      } else {
+        currentRow.classList.add('bounceRight');
+      }
+
+      window.setTimeout(() => {
+        currentRow.style.transform = 'translateX(0)';
+        currentRow.classList.remove('bounceRight', 'bounceLeft');
+      }, 1000);
     }
-
-    window.setTimeout(() => {
-      currentRow.style.transform = 'translateX(0)';
-      currentRow.classList.remove('bounceRight', 'bounceLeft');
-    }, 1000);
   }
 }
 
@@ -351,6 +359,18 @@ function handleRowHold(props) {
     selectedRows.value = [];
   }
   selectedRows.value.push(rows.value[props.rowIndex]);
+
+  window.setTimeout(() => {
+    const array = document.querySelectorAll('.fade-background-red');
+    const arrayLength = array.length;
+
+    for (let i = 0; i < arrayLength; i += 1) {
+      if (array[i].classList.contains('text-left')) {
+        array[i].previousElementSibling.classList.add('background-red');
+        array[i].classList.remove('fade-background-red');
+      }
+    }
+  }, 0);
 }
 
 onBeforeMount(() => {
@@ -408,6 +428,16 @@ onBeforeUnmount(() => {
   transform: translateX(-100%) !important;
 }
 
+.background-red:after{
+  background: @negative !important;
+}
+
+.fade-background-red:after {
+  animation-name: circleBackgroundChange;
+  animation-duration: 0.4s;
+  animation-fill-mode: forwards;
+}
+
 .q-table__middle {
   overflow: hidden;
 
@@ -432,19 +462,9 @@ onBeforeUnmount(() => {
   }
 
   tbody {
-    background: @black;
-
-    &.fade-background-red {
-      animation-name: circleBackgroundChange;
-      animation-duration: 0.4s;
-      animation-fill-mode: forwards;
-    }
-
     .q-tr {
-      background-color: @white;
-
       &.selected {
-        opacity: 0.92;
+        background: rgba(0, 0, 0, 0.08);
 
         > td:after {
           content: '';
@@ -461,10 +481,12 @@ onBeforeUnmount(() => {
         width: 50px;
         height: 100%;
         display: flex;
-        justify-content: center;
+        justify-content: flex-start;
         align-items: center;
         position: absolute;
-        background-color: transparent;
+        background-color: @black;
+        width: 200vw;
+        padding-left: 10px;
       }
 
       & > td:first-child:after{
