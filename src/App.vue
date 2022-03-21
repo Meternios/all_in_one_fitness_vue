@@ -94,7 +94,7 @@ onMounted(() => {
   messaging.getTokenMessaging().then((currentToken) => {
     if (currentToken) {
       // Send the token to your server and update the UI if necessary
-      // ...
+      console.log(currentToken);
     } else {
       // Show permission request UI
       console.log('No registration token available. Request permission to generate one.');
