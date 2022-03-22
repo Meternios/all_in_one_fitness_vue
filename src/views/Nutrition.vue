@@ -11,8 +11,9 @@
     >
       <template v-slot:body="props">
         <q-tr :props="props" @click="clickedRow(props.row)"
-        v-touch-pan.horizontal.prevent.mouse="(evt) => handleRowSwipe(evt, props)"
-        v-touch-hold.mouse="(evt) => handleRowHold(props)">
+        v-touch-pan.horizontal.prevent.mouse.mouseAllDir="
+        (selectedRows.length === 0) ? (evt) => handleRowSwipe(evt, props) : false"
+        v-touch-hold.mouse="(evt) => handleRowHold(props.row)">
           <q-td key="checkbox" v-if="selectedRows && selectedRows.length > 0">
             <q-checkbox v-model="props.selected" dense/>
           </q-td>
@@ -261,6 +262,19 @@ function clickedRow(row, edit) {
     } else {
       selectedRows.value.push(row);
     }
+
+    if (selectedRows.value.length === 0) {
+      window.setTimeout(() => {
+        const array = document.querySelectorAll('.swipe-row-right');
+        const arrayLength = array.length;
+
+        for (let i = 0; i < arrayLength; i += 1) {
+          if (array[i].firstElementChild.classList.contains('text-left')) {
+            array[i].firstElementChild.classList.add('background-red');
+          }
+        }
+      }, 0);
+    }
   }
 }
 
@@ -300,12 +314,20 @@ function deleteRow(allSelectedRows) {
   }
 }
 
-function handleRowSwipe(evt, row) {
+function handleRowSwipe(evt, props) {
   if (selectedRows.value.length === 0) {
     const isSwiping = evt.isFinal !== true && evt.isFirst !== true;
     const offsetTillDelete = 100;
     const swipingFinshed = evt.isFinal;
-    const currentRow = document.querySelector(`.q-table tbody > tr:nth-child(${row.rowIndex + 1})`);
+    const currentRow = document.querySelector(`.q-table tbody > tr:nth-child(${props.rowIndex + 1})`);
+    const array = document.querySelectorAll('.background-red');
+    const arrayLength = array.length;
+    if (arrayLength > 0) {
+      for (let i = 0; i < arrayLength; i += 1) {
+        array[i].classList.remove('background-red');
+      }
+    }
+
     if (isSwiping) {
       currentRow.style.transform = `translateX(${getOffset(currentRow).left + evt.delta.x}px)`;
 
@@ -346,7 +368,7 @@ function handleRowSwipe(evt, row) {
 
       currentRow.dataset.removeTimeout = window.setTimeout(() => {
         currentRow.style.transform = 'translateX(0px)';
-        tableUser.delete(dayjs(row.row.date, 'DD.MM.YYYY', true).format('YYYYMMDD'));
+        tableUser.delete(dayjs(props.row.date, 'DD.MM.YYYY', true).format('YYYYMMDD'));
       }, 6500);
     } else if (swipingFinshed && (getOffset(currentRow).left < offsetTillDelete
     || getOffset(currentRow).left > (-1) * offsetTillDelete)) {
@@ -364,11 +386,17 @@ function handleRowSwipe(evt, row) {
   }
 }
 
-function handleRowHold(props) {
+function handleRowHold(row) {
   if (selectedRows.value == null) {
     selectedRows.value = [];
   }
-  selectedRows.value.push(rows.value[props.rowIndex]);
+  const arrayIndex = selectedRows.value.findIndex((element) => element.date === row.date);
+
+  if (arrayIndex >= 0) {
+    selectedRows.value.splice(arrayIndex, 1);
+  } else {
+    selectedRows.value.push(row);
+  }
 
   window.setTimeout(() => {
     const array = document.querySelectorAll('.fade-background-red');
@@ -450,6 +478,7 @@ onBeforeUnmount(() => {
 
 .q-table__middle {
   overflow: hidden;
+  user-select: none;
 
   .q-table th, .q-table td {
     padding: 7px 10px;
