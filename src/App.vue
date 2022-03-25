@@ -45,6 +45,7 @@
 <script setup>
 // TODO Remove as many Libarys as possible from here and capsule it in components
 import auth from '@/api/authentication';
+import messaging from '@/api/cloudMessaging';
 import Register from '@/components/Register.vue';
 import {
   ref, onBeforeMount, onMounted,
@@ -90,6 +91,20 @@ onBeforeMount(() => {
 
 onMounted(() => {
   auth.startAuthObserver(callBack);
+  messaging.getToken().then((currentToken) => {
+    if (currentToken) {
+      // Send the token to your server and update the UI if necessary
+      console.log(currentToken);
+      messaging.startMessageObserver();
+    } else {
+      // Show permission request UI
+      console.log('No registration token available. Request permission to generate one.');
+      // ...
+    }
+  }).catch((err) => {
+    console.log('An error occurred while retrieving token. ', err);
+    // ...
+  });
 });
 </script>
 
