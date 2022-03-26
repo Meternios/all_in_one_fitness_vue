@@ -91,20 +91,21 @@ onBeforeMount(() => {
 
 onMounted(() => {
   auth.startAuthObserver(callBack);
-  messaging.getToken().then((currentToken) => {
-    if (currentToken) {
-      // Send the token to your server and update the UI if necessary
-      console.log(currentToken);
-      messaging.startMessageObserver();
-    } else {
-      // Show permission request UI
-      console.log('No registration token available. Request permission to generate one.');
+  if (process.env.NODE_ENV === 'production') {
+    messaging.getToken().then((currentToken) => {
+      if (currentToken) {
+        // Send the token to your server and update the UI if necessary
+        messaging.startMessageObserver();
+      } else {
+        // Show permission request UI
+        console.log('No registration token available. Request permission to generate one.');
+        // ...
+      }
+    }).catch((err) => {
+      console.log('An error occurred while retrieving token. ', err);
       // ...
-    }
-  }).catch((err) => {
-    console.log('An error occurred while retrieving token. ', err);
-    // ...
-  });
+    });
+  }
 });
 </script>
 
