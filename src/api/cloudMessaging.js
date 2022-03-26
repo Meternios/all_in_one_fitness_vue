@@ -1,8 +1,5 @@
 import { getToken, onMessage } from 'firebase/messaging';
 import firebase from '@/firebase';
-import { useQuasar } from 'quasar';
-
-const $q = useQuasar();
 
 class CloudMessaging {
     getToken = () => getToken(firebase.messaging,
@@ -10,7 +7,7 @@ class CloudMessaging {
         vapidKey: 'BO0HYOZrccbHY-p5jl633Yhpng_FLm8z59ge2cKEnmFyEv33h-P-U7xnsK6hqXPG8yNWvciBv-ZhdvQg0mk-7ks',
       });
 
-    startMessageObserver = () => onMessage(firebase.messaging, (payload) => {
+    startMessageObserver = ($q) => onMessage(firebase.messaging, (payload) => {
       $q.notify({
         message: payload.notification.title,
         caption: payload.notification.body,
