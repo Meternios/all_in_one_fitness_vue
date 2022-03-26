@@ -3,7 +3,9 @@ import firebase from '@/firebase';
 import { useQuasar } from 'quasar';
 
 class CloudMessaging {
-    $q = useQuasar();
+  constructor() {
+    this.$q = useQuasar();
+  }
 
     getToken = () => getToken(firebase.messaging,
       {
