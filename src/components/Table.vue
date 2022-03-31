@@ -66,13 +66,15 @@
         </div>
       </template>
     </q-table>
-    <q-page-sticky position="bottom-right" :offset="[18, 18]">
+    <q-page-sticky position="bottom-right" :offset="fabPos">
       <q-btn
         fab
         icon="add"
         color="accent"
         @click="showModal"
         aria-label="Hinzufügen"
+        :disable="draggingFab"
+        v-touch-pan.prevent.mouse="moveFab"
       />
     </q-page-sticky>
     <q-dialog v-model="prompt" persistent>
@@ -91,6 +93,7 @@
               :disable="value.disabled"
               :autofocus="value.focus"
               v-model="form[value.name]"
+              :step="(value.field === 'number') ? '.1' : null"
               @update:model-value="
                 value.handleOnUpdate ? handleOnUpdate(value.value) : null
               "
@@ -152,6 +155,17 @@ const prompt = ref(false);
 const $q = useQuasar();
 const addOrEditLabel = ref('Hinzufügen');
 const form = ref({ date: today });
+const fabPos = ref([18, 18]);
+const draggingFab = ref(false);
+
+function moveFab(ev) {
+  draggingFab.value = ev.isFirst !== true && ev.isFinal !== true;
+
+  fabPos.value = [
+    fabPos.value[0] - ev.delta.x,
+    fabPos.value[1] - ev.delta.y,
+  ];
+}
 
 function handleOnUpdate() {
   emits('onInputUpdate', form.value);
@@ -171,8 +185,8 @@ function showModal() {
 function checkIfValid(data) {
   let valid = true;
   Object.entries(data).forEach((record) => {
-    if (/^\d+$/.test(record[1])) {
-      form.value[record[0]] = parseInt(form.value[record[0]], 10);
+    if (record[0] !== 'date' && !Number.isNaN(parseFloat(record[1]))) {
+      form.value[record[0]] = parseFloat(form.value[record[0]]);
       if (form.value[record[0]] <= 0 || form.value[record[0]] > 9999) {
         valid = false;
       }
