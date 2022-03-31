@@ -6,7 +6,10 @@ import firebase from '../firebase';
 class DataService {
   constructor(dbRef) {
     this.db = ref(firebase.database, dbRef);
+    this.dbRef = dbRef;
   }
+
+  getDbString = () => this.dbRef;
 
   getAll = () => this.db;
 

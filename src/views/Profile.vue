@@ -16,7 +16,7 @@
 
         <q-form @submit="addWeight">
           <q-card-section class="q-pt-none">
-            <q-input dense v-model="weight" step=".1" type="number" autofocus label="Gewicht"/>
+            <q-input v-model="weight" step=".1" type="number" autofocus label="Gewicht"/>
             <q-input v-model="date" label="Datum">
               <template v-slot:append>
                 <q-icon name="event" class="cursor-pointer">
