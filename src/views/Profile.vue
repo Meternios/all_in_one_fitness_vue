@@ -10,7 +10,7 @@
           :columns="columns"
           :rows="rows"
           modalTitle="Heutiges Gewicht"
-          :table="weightTable"
+          :table="weightAndNeatTable"
         />
       </div>
     </div>
@@ -34,7 +34,7 @@ import auth from '@/api/authentication';
 import PubSub from 'pubsub-js';
 
 const user = auth.getCurrentUser();
-const weightTable = new DataService(`weight/${user.uid}`);
+const weightAndNeatTable = new DataService(`weightAndNeat/${user.uid}`);
 let chart;
 let tableData;
 let pubSubToken;
@@ -50,9 +50,16 @@ const columns = ref([
   {
     name: 'weight',
     align: 'right',
-    label: 'Gewicht',
+    label: 'Gewicht (kg)',
     field: 'number',
     focus: true,
+  },
+  {
+    name: 'steps',
+    align: 'right',
+    label: 'Schritte',
+    field: 'number',
+    noValidation: true,
   },
 ]);
 
@@ -122,6 +129,7 @@ function updateData(data) {
         recordsToAddTable.push({
           date: record[1].date,
           weight: record[1].weight,
+          steps: record[1].steps,
         });
       }
     });
@@ -148,7 +156,7 @@ function dataRecieved(data) {
 onMounted(() => {
   chart = new ApexCharts(document.querySelector('#chart'), options);
   chart.render();
-  weightTable.listenOn(dataRecieved);
+  weightAndNeatTable.listenOn(dataRecieved);
 
   pubSubToken = PubSub.subscribe('date.changed', () => {
     updateData(tableData);

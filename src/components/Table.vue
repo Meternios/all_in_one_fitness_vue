@@ -157,6 +157,13 @@ const addOrEditLabel = ref('Hinzufügen');
 const form = ref({ date: today });
 const fabPos = ref([18, 18]);
 const draggingFab = ref(false);
+const noValidation = [];
+
+Object.values(propsFromParent.columns).forEach((record) => {
+  if ('noValidation' in record && record.noValidation === true) {
+    noValidation.push(record.name);
+  }
+});
 
 function moveFab(ev) {
   draggingFab.value = ev.isFirst !== true && ev.isFinal !== true;
@@ -186,8 +193,8 @@ function checkIfValid(data) {
   let valid = true;
   Object.entries(data).forEach((record) => {
     if (record[0] !== 'date' && !Number.isNaN(parseFloat(record[1]))) {
-      form.value[record[0]] = parseFloat(form.value[record[0]]);
-      if (form.value[record[0]] <= 0 || form.value[record[0]] > 9999) {
+      form.value[record[0]] = parseFloat(record[1]);
+      if ((record[1] <= 0 || record[1] > 9999) && !noValidation.includes(record[0])) {
         valid = false;
       }
     }

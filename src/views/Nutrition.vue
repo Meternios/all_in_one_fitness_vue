@@ -34,6 +34,7 @@ const columns = ref([
     label: 'Kcal',
     field: 'number',
     disabled: true,
+    noValidation: true,
   },
   {
     name: 'protein',
