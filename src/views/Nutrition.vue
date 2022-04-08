@@ -1,25 +1,77 @@
 <template>
   <div class="about">
-    <Table
-      :paginationSetting="paginationSetting"
-      :columns="columns"
-      :rows="rows"
-      modalTitle="Heutige Makronährstoffe"
-      @on-input-update="calculateCalories"
-      :table="nutritionTable"
-    />
+    <div class="row">
+      <div class="col-12 col-lg-6">
+        <Chart :chartData="chartData" :chartOptions="chartOptions" chartType="Bar"
+        :height="250"/>
+      </div>
+      <div class="col-12 col-lg-6 q-mt-md">
+        <Table
+          :paginationSetting="paginationSetting"
+          :columns="columns"
+          :rows="rows"
+          modalTitle="Heutige Makronährstoffe"
+          @on-input-update="calculateCalories"
+          :table="nutritionTable"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import Table from '@/components/Table.vue';
+import Chart from '@/components/Chart.vue';
 import DataService from '@/api/dataService';
 import auth from '@/api/authentication';
 import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 import PubSub from 'pubsub-js';
 
 let pubSubToken;
-let tableData;
+let dbData;
+const chartData = ref({
+  labels: [],
+  datasets: [{
+    data: [],
+    borderColor: '#01579b',
+  }],
+});
+const chartOptions = ref({
+  responsive: true,
+  plugins: {
+    legend: {
+      display: false,
+    },
+    tooltip: {
+      multiKeyBackground: '#01579b',
+      callbacks: {
+        label(tooltipItem) {
+          return `${tooltipItem.dataset.label}: ${tooltipItem.raw / ((tooltipItem.datasetIndex !== 2) ? 4 : 9)}g`;
+        },
+      },
+    },
+  },
+  scales: {
+    y: {
+      ticks: {
+        callback(val, index) {
+          return index % 2 === 0 ? this.getLabelForValue(val) : '';
+        },
+      },
+      grid: {
+        display: false,
+      },
+      stacked: true,
+    },
+    x: {
+      grid: {
+        display: false,
+      },
+      stacked: true,
+    },
+  },
+
+});
 const rows = ref();
 const columns = ref([
   {
@@ -80,6 +132,24 @@ function calculateCalories(form) {
 
 function updateData(data) {
   const recordsToAdd = [];
+  const recordsToAddChart = [
+    {
+      label: 'Protein',
+      data: [],
+      backgroundColor: '#01579b',
+    },
+    {
+      label: 'Kohlenhydrate',
+      data: [],
+      backgroundColor: '#4f83cc',
+    },
+    {
+      label: 'Fett',
+      data: [],
+      backgroundColor: '#002f6c',
+    },
+  ];
+  const labelsToAddChart = [];
   if (data) {
     Object.entries(data).forEach((record) => {
       if (
@@ -93,25 +163,29 @@ function updateData(data) {
           carbohydrates: record[1].carbohydrates,
           fat: record[1].fat,
         });
+        labelsToAddChart.push(record[1].date);
+        recordsToAddChart[0].data.push(record[1].protein * 4);
+        recordsToAddChart[1].data.push(record[1].carbohydrates * 4);
+        recordsToAddChart[2].data.push(record[1].fat * 9);
       }
     });
-
-    rows.value = recordsToAdd;
-  } else {
-    rows.value = recordsToAdd;
   }
+
+  chartData.value.labels = labelsToAddChart;
+  chartData.value.datasets = recordsToAddChart;
+  rows.value = recordsToAdd;
 }
 
 function dataRecieved(data) {
   updateData(data);
-  tableData = data;
+  dbData = data;
 }
 
 onBeforeMount(() => {
   nutritionTable.listenOn(dataRecieved);
 
   pubSubToken = PubSub.subscribe('date.changed', () => {
-    updateData(tableData);
+    updateData(dbData);
   });
 });
 
