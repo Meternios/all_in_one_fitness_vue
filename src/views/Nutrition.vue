@@ -2,8 +2,12 @@
   <div class="about">
     <div class="row">
       <div class="col-12 col-lg-6">
-        <Chart :chartData="chartData" :chartOptions="chartOptions" chartType="Bar"
-        :height="250"/>
+        <Chart
+          :chartData="chartData"
+          :chartOptions="chartOptions"
+          chartType="Bar"
+          :height="250"
+        />
       </div>
       <div class="col-12 col-lg-6 q-mt-md">
         <Table
@@ -13,6 +17,7 @@
           modalTitle="Heutige Makronährstoffe"
           @on-input-update="calculateCalories"
           :table="nutritionTable"
+          :bottomRow="bottomRow"
         />
       </div>
     </div>
@@ -31,10 +36,12 @@ let pubSubToken;
 let dbData;
 const chartData = ref({
   labels: [],
-  datasets: [{
-    data: [],
-    borderColor: '#01579b',
-  }],
+  datasets: [
+    {
+      data: [],
+      borderColor: '#01579b',
+    },
+  ],
 });
 const chartOptions = ref({
   responsive: true,
@@ -46,7 +53,9 @@ const chartOptions = ref({
       multiKeyBackground: '#01579b',
       callbacks: {
         label(tooltipItem) {
-          return `${tooltipItem.dataset.label}: ${tooltipItem.raw / ((tooltipItem.datasetIndex !== 2) ? 4 : 9)}g`;
+          return `${tooltipItem.dataset.label}: ${
+            tooltipItem.raw / (tooltipItem.datasetIndex !== 2 ? 4 : 9)
+          }g`;
         },
       },
     },
@@ -70,8 +79,8 @@ const chartOptions = ref({
       stacked: true,
     },
   },
-
 });
+const bottomRow = ref([]);
 const rows = ref();
 const columns = ref([
   {
@@ -130,6 +139,7 @@ function calculateCalories(form) {
   columns.value[1].value = calories;
 }
 
+// TODO Optimize function
 function updateData(data) {
   const recordsToAdd = [];
   const recordsToAddChart = [
@@ -150,6 +160,13 @@ function updateData(data) {
     },
   ];
   const labelsToAddChart = [];
+  let avgRecordToAdd = [
+    { value: 'Ø' },
+    { value: 0, length: 0 },
+    { value: 0, length: 0 },
+    { value: 0, length: 0 },
+    { value: 0, length: 0 },
+  ];
   if (data) {
     Object.entries(data).forEach((record) => {
       if (
@@ -163,16 +180,41 @@ function updateData(data) {
           carbohydrates: record[1].carbohydrates,
           fat: record[1].fat,
         });
+        if (typeof record[1].calories !== 'undefined') {
+          avgRecordToAdd[1].value += record[1].calories;
+          avgRecordToAdd[1].length += 1;
+        }
+        if (typeof record[1].protein !== 'undefined') {
+          avgRecordToAdd[2].value += record[1].protein;
+          avgRecordToAdd[2].length += 1;
+        }
+        if (typeof record[1].carbohydrates !== 'undefined') {
+          avgRecordToAdd[3].value += record[1].carbohydrates;
+          avgRecordToAdd[3].length += 1;
+        }
+        if (typeof record[1].fat !== 'undefined') {
+          avgRecordToAdd[4].value += record[1].fat;
+          avgRecordToAdd[4].length += 1;
+        }
         labelsToAddChart.push(record[1].date);
         recordsToAddChart[0].data.push(record[1].protein * 4);
         recordsToAddChart[1].data.push(record[1].carbohydrates * 4);
         recordsToAddChart[2].data.push(record[1].fat * 9);
       }
     });
+
+    avgRecordToAdd[1].value /= avgRecordToAdd[1].length;
+    avgRecordToAdd[2].value /= avgRecordToAdd[2].length;
+    avgRecordToAdd[3].value /= avgRecordToAdd[3].length;
+    avgRecordToAdd[4].value /= avgRecordToAdd[4].length;
   }
 
   chartData.value.labels = labelsToAddChart;
   chartData.value.datasets = recordsToAddChart;
+  if (recordsToAdd.length <= 0) {
+    avgRecordToAdd = null;
+  }
+  bottomRow.value = avgRecordToAdd;
   rows.value = recordsToAdd;
 }
 

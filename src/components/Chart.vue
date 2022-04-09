@@ -34,6 +34,7 @@ import {
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, PointElement, LineElement);
 
+// Todo Unique id with getCurrentInstance().uid
 const propsFromParent = defineProps({
   chartType: {
     type: String,

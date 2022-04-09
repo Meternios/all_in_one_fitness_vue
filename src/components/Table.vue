@@ -34,6 +34,19 @@
           </q-td>
         </q-tr>
       </template>
+      <template v-slot:bottom-row v-if="propsFromParent.bottomRow !== null">
+        <q-tr class="aiof-bottom-row">
+          <q-td
+            v-for="(record, key) in propsFromParent.bottomRow"
+            :key="key"
+            :class="
+              typeof record.value === 'number' && !isNaN(record.value) ? 'text-right' : ''
+            "
+          >
+            {{ record.value }}
+          </q-td>
+        </q-tr>
+      </template>
       <template v-slot:bottom v-if="selectedRows && selectedRows.length > 0">
         <div class="q-table__separator col"></div>
         <div class="q-table__control q-mr-sm">
@@ -143,6 +156,7 @@ const propsFromParent = defineProps({
   rows: Array,
   modalTitle: String,
   table: DataService,
+  bottomRow: Array,
 });
 
 const emits = defineEmits(['onInputUpdate']);
@@ -570,7 +584,7 @@ function handleRowHold(row) {
     }
 
     tbody {
-      .q-tr {
+      .q-tr:not(.aiof-bottom-row) {
         &.selected {
           background: rgba(0, 0, 0, 0.08);
 

@@ -12,6 +12,7 @@
           :rows="rows"
           modalTitle="Heutiges Gewicht"
           :table="weightAndNeatTable"
+          :bottomRow="bottomRow"
         />
       </div>
     </div>
@@ -98,19 +99,31 @@ const columns = ref([
     noValidation: true,
   },
 ]);
+const bottomRow = ref([]);
 const paginationSetting = {
   rowsPerPage: 7,
 };
 
+// TODO Optimize function
 function updateData(data) {
   const recordsToAddChart = [];
   const labelsToAddChart = [];
   const recordsToAddTable = [];
+  let avgRecordToAdd = [{ value: 'Ø' }, { value: 0, length: 0 }, { value: 0, length: 0 }];
   if (data) {
     Object.entries(data).forEach((record) => {
       if (record[0] >= window.aiofGlobalDateFrom && record[0] <= window.aiofGlobalDateTo) {
         labelsToAddChart.push(record[1].date);
         recordsToAddChart.push(record[1].weight);
+
+        if (typeof record[1].weight !== 'undefined') {
+          avgRecordToAdd[1].value += record[1].weight;
+          avgRecordToAdd[1].length += 1;
+        }
+        if (typeof record[1].steps !== 'undefined') {
+          avgRecordToAdd[2].value += record[1].steps;
+          avgRecordToAdd[2].length += 1;
+        }
 
         recordsToAddTable.push({
           date: record[1].date,
@@ -119,10 +132,17 @@ function updateData(data) {
         });
       }
     });
+
+    avgRecordToAdd[1].value /= avgRecordToAdd[1].length;
+    avgRecordToAdd[2].value /= avgRecordToAdd[2].length;
   }
 
   chartData.value.labels = labelsToAddChart;
   chartData.value.datasets[0].data = recordsToAddChart;
+  if (recordsToAddTable.length <= 0) {
+    avgRecordToAdd = null;
+  }
+  bottomRow.value = avgRecordToAdd;
   rows.value = recordsToAddTable;
 }
 
