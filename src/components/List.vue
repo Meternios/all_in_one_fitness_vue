@@ -75,7 +75,7 @@
             class="q-mr-sm"
             dense
             v-if="propsFromParent.rows.filter(x => x.checked === true).length <= 1"
-            @click="() => handleRowClick(null, true)"
+            @click="() => handleRowClick(propsFromParent.rows, true)"
           />
           <q-btn
             outline
@@ -221,12 +221,12 @@ function handleOnUpdate() {
   });
 }
 
-function handleRowClick(data, edit) {
+function handleRowClick(data, rowsSelected) {
   const modifiedData = data;
   if (
     propsFromParent.rows
     && propsFromParent.rows.some((e) => e.checked === true)
-    && !edit
+    && !rowsSelected
   ) {
     if (data.checked === true) {
       modifiedData.checked = false;
@@ -236,10 +236,11 @@ function handleRowClick(data, edit) {
   } else {
     addOrEditLabel.value = 'Bearbeiten';
     prompt.value = true;
+    const selectedRow = (rowsSelected) ? Object.values(modifiedData).find((k) => k.checked === true) : data;
 
-    Object.entries(modifiedData.row).forEach((record) => {
-      const recordKey = record[0];
-      const recordValue = record[1];
+    Object.entries(selectedRow.row).forEach((row) => {
+      const recordKey = row[0];
+      const recordValue = row[1];
       form.value[recordKey] = recordValue;
     });
   }
