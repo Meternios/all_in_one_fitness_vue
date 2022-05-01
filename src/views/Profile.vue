@@ -151,7 +151,6 @@ function dataRecieved(data) {
   dbData = data;
 }
 
-// TODO Change from ApexCharts to GoogleCharts?
 onMounted(() => {
   weightAndNeatTable.listenOn(dataRecieved);
 

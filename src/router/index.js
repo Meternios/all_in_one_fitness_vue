@@ -23,6 +23,14 @@ const routes = [
     // which is lazy-loaded when the route is visited.
     component: () => import(/* webpackChunkName: "workout" */ '../views/Workout.vue'),
   },
+  {
+    path: '/settings',
+    name: 'Einstellungen',
+    // route level code-splitting
+    // this generates a separate chunk (workout.[hash].js) for this route
+    // which is lazy-loaded when the route is visited.
+    component: () => import(/* webpackChunkName: "workout" */ '../views/Settings.vue'),
+  },
 ];
 
 const router = createRouter({

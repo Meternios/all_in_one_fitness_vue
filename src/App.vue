@@ -16,7 +16,7 @@
           </q-popup-proxy>
         </q-btn>
         <q-btn icon="show_chart" flat aria-label="Zeitspanne"/>
-        <q-btn icon="settings" flat aria-label="Einstellungen"/>
+        <q-btn icon="settings" to="/settings" flat aria-label="Einstellungen"/>
       </q-toolbar>
     </q-header>
 
