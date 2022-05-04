@@ -7,6 +7,7 @@
             propsFromParent.rows &&
             propsFromParent.rows.some((e) => e.checked === true)
           "
+          class="noFlex"
         >
           <q-checkbox
             v-model="allChecked"
@@ -41,12 +42,14 @@
           v-ripple
           @click="handleRowClick(data)"
           v-touch-hold.mouse="(evt) => handleRowHold(data)"
+          dense
         >
           <q-item-section
             v-if="
               propsFromParent.rows &&
               propsFromParent.rows.some((e) => e.checked === true)
             "
+            class="noFlex"
           >
             <q-checkbox v-model="data.checked" dense />
           </q-item-section>
@@ -85,7 +88,7 @@
             dense
           />
       </q-item>
-      <q-item v-else>
+      <q-item v-else-if="propsFromParent.bottomRow !== null">
         <q-item-section
           v-for="(record, name) in propsFromParent.bottomRow"
           :key="name"
@@ -100,6 +103,7 @@
     </q-list>
     <q-pagination
       v-model="currentPage"
+      v-if="propsFromParent.paginationSetting.totalPages > 1"
       :max="propsFromParent.paginationSetting.totalPages"
       @update:model-value="updatePagination"
       class="justify-center q-my-sm"
@@ -391,5 +395,9 @@ function hideCalendar(e) {
 <style lang="less" scoped>
 .rotate180 {
   transform: scaleX(-1);
+}
+
+.noFlex {
+  flex: none;
 }
 </style>
