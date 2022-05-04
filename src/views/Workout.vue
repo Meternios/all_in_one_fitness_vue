@@ -12,6 +12,8 @@
           modalTitle="Heutiges Gewicht"
           :table="weightAndNeatTable"
           :bottomRow="bottomRow"
+          :paginationSetting="paginationSetting"
+          @on-pagination-change="updateList"
         />
       </div>
     </div>
@@ -99,24 +101,33 @@ const columns = ref([
   },
 ]);
 const bottomRow = ref([]);
+const paginationSetting = ref({ currentPage: 1, itemsPerSite: 7, totalPages: NaN });
+let recordsToAddTable;
+
+function updateList(currentPage) {
+  paginationSetting.value.currentPage = currentPage;
+  rows.value = recordsToAddTable.slice(
+    (currentPage - 1) * paginationSetting.value.itemsPerSite,
+    (currentPage - 1) * paginationSetting.value.itemsPerSite + paginationSetting.value.itemsPerSite,
+  );
+}
 
 // TODO Optimize function
 function updateData(data) {
-  const recordsToAddChart = [];
-  const labelsToAddChart = [];
-  const recordsToAddTable = [];
+  const chartRecords = { labels: [], data: [] };
+  recordsToAddTable = [];
   let avgRecordToAdd = [{ value: 'Ø' }, { value: 0, length: 0 }, { value: 0, length: 0 }];
   if (data) {
     Object.entries(data).forEach((record) => {
       if (record[0] >= window.aiofGlobalDateFrom && record[0] <= window.aiofGlobalDateTo) {
-        labelsToAddChart.push(record[1].date);
-        recordsToAddChart.push(record[1].weight);
+        chartRecords.labels.push(record[1].date);
+        chartRecords.data.push(record[1].weight);
 
-        if (typeof record[1].weight !== 'undefined') {
+        if (!Number.isNaN(parseFloat(record[1].weight))) {
           avgRecordToAdd[1].value += record[1].weight;
           avgRecordToAdd[1].length += 1;
         }
-        if (typeof record[1].steps !== 'undefined') {
+        if (!Number.isNaN(parseInt(record[1].steps, 10))) {
           avgRecordToAdd[2].value += record[1].steps;
           avgRecordToAdd[2].length += 1;
         }
@@ -133,16 +144,21 @@ function updateData(data) {
     });
 
     avgRecordToAdd[1].value /= avgRecordToAdd[1].length;
-    avgRecordToAdd[2].value /= avgRecordToAdd[2].length;
+    if (avgRecordToAdd[2].value !== 0) {
+      avgRecordToAdd[2].value /= avgRecordToAdd[2].length;
+    } else {
+      avgRecordToAdd[2].value = '';
+    }
   }
 
-  chartData.value.labels = labelsToAddChart;
-  chartData.value.datasets[0].data = recordsToAddChart;
+  chartData.value.labels = chartRecords.labels;
+  chartData.value.datasets[0].data = chartRecords.data;
   if (recordsToAddTable.length <= 0) {
     avgRecordToAdd = null;
   }
   bottomRow.value = avgRecordToAdd;
-  rows.value = recordsToAddTable;
+  updateList(paginationSetting.value.currentPage);
+  paginationSetting.value.totalPages = Math.ceil(recordsToAddTable.length / 7);
 }
 
 function dataRecieved(data) {

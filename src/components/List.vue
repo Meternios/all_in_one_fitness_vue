@@ -98,6 +98,12 @@
         >
       </q-item>
     </q-list>
+    <q-pagination
+      v-model="currentPage"
+      :max="propsFromParent.paginationSetting.totalPages"
+      @update:model-value="updatePagination"
+      class="justify-center q-my-sm"
+    />
     <q-page-sticky position="bottom-right" :offset="fabPos">
       <q-btn
         fab
@@ -175,9 +181,10 @@ const propsFromParent = defineProps({
   modalTitle: String,
   table: DataService,
   bottomRow: Array,
+  paginationSetting: Object,
 });
 
-const emits = defineEmits(['onInputUpdate']);
+const emits = defineEmits(['onInputUpdate', 'onPaginationChange']);
 
 const qDateProxy = ref(false);
 const today = dayjs().format('DD.MM.YYYY');
@@ -189,12 +196,17 @@ const fabPos = ref([18, 18]);
 const draggingFab = ref(false);
 const noValidation = [];
 const allChecked = ref(false);
+const currentPage = ref(propsFromParent.paginationSetting.currentPage);
 
 Object.values(propsFromParent.columns).forEach((record) => {
   if ('noValidation' in record && record.noValidation === true) {
     noValidation.push(record.name);
   }
 });
+
+function updatePagination() {
+  emits('onPaginationChange', currentPage.value);
+}
 
 function checkAll() {
   const modifiedData = propsFromParent.rows;
